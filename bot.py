@@ -1,7 +1,11 @@
+from os import link
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
 from aiogram.utils.emoji import emojize
+import re
+
+from youtube_dl.utils import DownloadError
 
 import yt_download as yt
 from config import token
@@ -26,10 +30,13 @@ async def process_services_command(message: types.Message):
 
 @dp.message_handler(content_types=['text'])
 async def echo_download_message(msg: types.Message):
-	yt.download_video(msg.text)
-	videonote = open('video.mp4', 'rb')
-	await msg.answer_video(videonote)
-	videonote.close()
+    try:
+        videonote = open(yt.download_video(msg.text), 'rb')
+    except DownloadError:
+        link_from_message=re.search("(?P<url>https?://[^\s]+)", msg.text).group("url")
+        videonote = open(yt.download_video(link_from_message), 'rb')
+    await msg.answer_video(videonote)
+    videonote.close()
 
 print("starting")
 executor.start_polling(dp)

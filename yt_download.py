@@ -3,19 +3,15 @@ import os
 
 
 ydl_opts = {
-            'outtmpl':"video.%(ext)s",
-            'format': 'best',
+            'format': 'worst',
             'noplaylist' : True
 }
 
 def download_video(link):
-	if os.path.isfile("video.mp4"):
-		os.remove("video.mp4")
-	with YoutubeDL(ydl_opts) as ydl:
-		return ydl.download([link])
-
-
-#low_res_video = zip(video)
-
-#download_video('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
-#get_video_title('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+    with YoutubeDL(ydl_opts) as ydl:
+        result = ydl.extract_info("{}".format(link), download=False)
+        filename=ydl.prepare_filename(result)
+        if os.path.isfile(filename):
+            os.remove(filename)
+        ydl.download([link])
+        return filename
