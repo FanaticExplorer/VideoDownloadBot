@@ -35,7 +35,8 @@ async def echo_download_message(msg: types.Message):
     except DownloadError:
         link_from_message=re.search("(?P<url>https?://[^\s]+)", msg.text).group("url")
         videonote = open(yt.download_video(link_from_message), 'rb')
-    await msg.answer_video(videonote)
+    #await msg.answer_video(videonote)
+    await bot.send_document(msg.from_user.id, videonote)
     videonote.close()
 
 print("starting")
