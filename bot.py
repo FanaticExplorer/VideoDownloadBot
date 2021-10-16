@@ -1,4 +1,3 @@
-from os import link
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
@@ -31,12 +30,16 @@ async def process_services_command(message: types.Message):
 @dp.message_handler(content_types=['text'])
 async def echo_download_message(msg: types.Message):
     try:
-        videonote = open(yt.download_video(msg.text), 'rb')
+        echo_download=yt.Downloader(msg.text)
     except DownloadError:
-        link_from_message=re.search("(?P<url>https?://[^\s]+)", msg.text).group("url")
-        videonote = open(yt.download_video(link_from_message), 'rb')
-    #await msg.answer_video(videonote)
-    await bot.send_document(msg.from_user.id, videonote)
+        text_of_message=msg.text
+        if "\n" in msg.text:
+            text_of_message.replace("\n"," ",1)
+            text_of_message.replace("\r"," ",1)
+        link_from_message=re.search("(?P<url>https?://[^\s]+)", text_of_message).group("url")
+        echo_download=yt.Downloader(link_from_message)
+    videonote = open(echo_download.download_video(), 'rb')
+    await msg.answer_video(videonote)
     videonote.close()
 
 print("starting")
