@@ -43,7 +43,6 @@ async def echo_download_message(message: types.Message):
         await message.reply("К сожалению, произошла ошибка...\n")
         print('Error :(')
         return
-    
     await message.reply("Готово, видео скачано на сервер.\nНачинаю отправку вам...")
     await message.answer_video(videonote)
     videonote.close()
