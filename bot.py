@@ -1,14 +1,23 @@
 from aiogram import Bot, types
+from aiogram.types import ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+import aiogram
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
 from aiogram.utils.emoji import emojize
-import re
 
+import re
+import os
+
+from time import sleep
 
 import yt_download as yt
-from config import token
+from config import token,test_token
 
-bot = Bot(token=token)
+if "HEROKU" in list(os.environ.keys()):
+    bot = Bot(token=token)
+else:
+    bot = Bot(token=test_token)
+
 dp = Dispatcher(bot)
 
 
@@ -25,28 +34,50 @@ async def process_help_command(message: types.Message):
 async def process_services_command(message: types.Message):
     await message.reply(emojize('Список всех доступных сайтов здесь :point_down: : \n https://github.com/ytdl-org/youtube-dl/blob/master/docs/supportedsites.md'))
 
+
 @dp.message_handler(content_types=['text'])
 async def echo_download_message(message: types.Message):
+    global videonote
+    inline_btn_video = InlineKeyboardButton('Скачать как об.видео', callback_data='download_as_video')
+    inline_btn_file = InlineKeyboardButton('Скачать как файл(пока нерабочее -_-)', callback_data='download_as_file')
+    choose_inline = InlineKeyboardMarkup(row_width=1)
+    choose_inline.add(inline_btn_video)
+    choose_inline.add(inline_btn_file)
     echo_download=yt.Downloader(message.text)
+    await message.reply("Увидел, начинаю скачивание...")
+
     try:
         videonote = open(echo_download.download_video(), 'rb')
-    # except:
-    #     try:
-    #         text_of_message=message.text
-    #         link_from_message=re.search("(?P<url>https?://[^\s]+)", text_of_message).group("url")
-    #         echo_download=yt.Downloader(link_from_message)
-    #     except:
-    #         await message.reply("К сожалению, произошла ошибка...\nПопробуйте вставить именно ссылку, без доп.текста!")
-    #         print('Failure finding the link')
-    #         return
     except:
-        await message.reply("К сожалению, произошла ошибка...\n")
+        await message.reply("К сожалению, произошла ошибка...")
         print('Error :(')
         return
-    
-    await message.reply("Готово, видео скачано на сервер.\nНачинаю отправку вам...")
-    await message.answer_video(videonote)
-    videonote.close()
+    await message.reply("Готово, видео скачано на сервер.\nКак вы хотите получить это видео?", reply_markup=choose_inline)
+
+
+@dp.callback_query_handler(text='download_as_video')
+async def choose_inline_video_callback_handler(query: types.CallbackQuery):
+    await bot.send_message(query.from_user.id, 'Начинаю отправку')
+    sleep(0.5)
+    try:
+        await bot.send_video(query.from_user.id, videonote)
+    except:
+        await bot.send_message(query.from_user.id, "К сожалению, произошла ошибка при отправке...")
+    finally:
+        videonote.close()
+
+@dp.callback_query_handler(text='download_as_file')
+async def choose_inline_video_callback_handler(query: types.CallbackQuery):
+    await bot.send_message(query.from_user.id, 'Начинаю отправку')
+    sleep(0.5)
+    try:
+        await bot.send_document(query.from_user.id, videonote)
+    except:
+        await bot.send_message(query.from_user.id, "К сожалению, произошла ошибка при отправке...")
+    finally:
+        videonote.close()
+
+
 
 print("Starting")
 executor.start_polling(dp)
