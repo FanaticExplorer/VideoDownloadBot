@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 aiogram
 yt-dlp
 =======
@@ -6,3 +7,8 @@ aiogram
 yt-dlp
 emoji
 >>>>>>> 0f34a80ebc9e69f3b9aa8db463a7422467c8c20c
+=======
+aiogram
+yt-dlp
+emoji
+>>>>>>> 72c650f74147d1e2dc9950bb328bebd0bf34dc25
