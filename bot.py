@@ -28,7 +28,7 @@ async def process_start_command(message: types.Message):
 
 @dp.message_handler(commands=['help'])
 async def process_help_command(message: types.Message):
-    await message.reply("К сожалению, эта часть еще не готова...\nПодождите немного!")
+    await message.reply("К сожалению, эта часть еще не готова...\nПодождите немного!\nСкоро...")
 
 @dp.message_handler(commands=['available_services'])
 async def process_services_command(message: types.Message):
