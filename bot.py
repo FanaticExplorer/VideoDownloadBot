@@ -32,7 +32,7 @@ async def process_help_command(message: types.Message):
 
 @dp.message_handler(commands=['available_services'])
 async def process_services_command(message: types.Message):
-    await message.reply(emojize('Список всех доступных сайтов здесь :point_down: : \n https://github.com/ytdl-org/youtube-dl/blob/master/docs/supportedsites.md'))
+    await message.reply(emojize('Список всех доступных сайтов здесь: \n https://github.com/ytdl-org/youtube-dl/blob/master/docs/supportedsites.md'))
 
 
 @dp.message_handler(content_types=['text'])
@@ -48,9 +48,9 @@ async def echo_download_message(message: types.Message):
         return
     await message.reply("Готово, видео скачано на сервер.\nОтправляю...",)
     try:
-        await bot.send_document(query.from_user.id, videonote)
+        await bot.send_document(message.from_user.id, videonote)
     except:
-        await bot.send_message(query.from_user.id, "К сожалению, произошла ошибка при отправке...")
+        await bot.send_message(message.from_user.id, "К сожалению, произошла ошибка при отправке...")
     finally:
         videonote.close()
 
