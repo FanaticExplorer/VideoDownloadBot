@@ -48,9 +48,9 @@ async def echo_download_message(message: types.Message):
         return
     await message.reply("Готово, видео скачано на сервер.\nОтправляю...",)
     try:
-        await bot.send_document(query.from_user.id, videonote)
+        await bot.send_document(message.from_user.id, videonote)
     except:
-        await bot.send_message(query.from_user.id, "К сожалению, произошла ошибка при отправке...")
+        await bot.send_message(message.from_user.id, "К сожалению, произошла ошибка при отправке...")
     finally:
         videonote.close()
 
