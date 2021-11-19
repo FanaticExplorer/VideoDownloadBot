@@ -43,7 +43,7 @@ async def echo_download_message(message: types.Message):
         await message.reply("Увидел, начинаю скачивание...")
         videonote = open(echo_download.download_video(), 'rb')
     except:
-        await message.reply("К сожалению, произошла ошибка...")
+        await message.reply("К сожалению, произошла ошибка... Проверьте правильность ссылки")
         print('Error :(')
         return
     await message.reply("Готово, видео скачано на сервер.\nОтправляю...",)
