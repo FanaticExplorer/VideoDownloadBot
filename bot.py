@@ -38,11 +38,9 @@ async def process_services_command(message: types.Message):
 
 @dp.message_handler(content_types=['text'])
 async def echo_download_message(message: types.Message):
-    echo_download=yt.Downloader(message.text)
-    await message.reply("Увидел, начинаю скачивание...")
-
-
     try:
+        echo_download=yt.Downloader(message.text)
+        await message.reply("Увидел, начинаю скачивание...")
         videonote = open(echo_download.download_video(), 'rb')
     except:
         await message.reply("К сожалению, произошла ошибка...")
