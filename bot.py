@@ -24,7 +24,7 @@ dp = Dispatcher(bot)
 
 @dp.message_handler(commands=['start'])
 async def process_start_command(meUpdassage: types.Message):
-    await message.reply("Привет!\nЭтот бот позволяет скачивать видео с любых сайтов!\nДля более подробной информации напиши /help   /available_services")
+    await message.reply("Привет!\nЭтот бот позволяет скачивать видео с любых сайтов!\nДля более подробной информации напиши /help  /available_services")
 
 
 @dp.message_handler(commands=['help'])
