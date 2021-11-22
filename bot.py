@@ -11,19 +11,19 @@ import os
 from time import sleep
 
 import yt_download as yt
-from config import token,test_token
+import config as cg
 
 if "HEROKU" in list(os.environ.keys()):
-    bot = Bot(token=token)
+    bot = Bot(token=cg.token)
 else:
-    bot = Bot(token=test_token)
+    bot = Bot(token=cg.test_token)
 
 dp = Dispatcher(bot)
 
 
 
 @dp.message_handler(commands=['start'])
-async def process_start_command(message: types.Message):
+async def process_start_command(meUpdassage: types.Message):
     await message.reply("Привет!\nЭтот бот позволяет скачивать видео с любых сайтов!\nДля более подробной информации напиши /help   /available_services")
 
 
