@@ -8,3 +8,4 @@ test.py
 yt_download.py
 *.key
 *.pub
+config.py
