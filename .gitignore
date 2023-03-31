@@ -1,0 +1,10 @@
+.idea
+__pycache__
+.vscode/settings.json
+.venv
+videos
+size_test.txt
+test.py
+yt_download.py
+*.key
+*.pub

@@ -1,0 +1,13 @@
+#telegram itself
+aiogram
+
+#url extractors
+urlextract
+tldextract
+
+#video downloader
+yt-dlp
+
+#pretty console ^_^
+rich
+pretty_errors
