@@ -60,14 +60,6 @@ async def process_help_command(msg: types.message):
     await msg.reply(help_msg, disable_web_page_preview = True)
 
 
-@dp.message_handler(commands = ['available_services'])
-async def process_services_command(msg: types.message):
-    await bot.send_message(msg.from_user.id, 
-                        '''<a href = 'https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md'>'''
-                        +'📜Список всех доступных сайтов</a>', 
-                        parse_mode = 'HTML', 
-                        disable_web_page_preview = True)
-
 
 async def downloader(**args):
     global is_working
