@@ -1,5 +1,4 @@
 from aiogram import Bot, types
-# from aiogram.types import ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
 from aiogram.bot.api import TelegramAPIServer
@@ -14,8 +13,10 @@ from os import remove as fdel
 
 from urlextract import URLExtract
 import tldextract
-from yt_dlp.utils import DownloadError
+
 import pretty_errors
+from time import sleep
+from datetime import datetime
 
 
 import downloader as dl
@@ -39,6 +40,8 @@ except:
     bot = Bot(token=cg.token)
 dp = Dispatcher(bot)
 queue = asyncio.Queue(maxsize=100)
+while not queue.empty():
+    queue_get = queue.get()
 is_working = False
 
 with open(cg.start_msg_path, encoding='utf8') as f_start:
@@ -59,8 +62,6 @@ async def process_start_command(msg: types.message):
 async def process_help_command(msg: types.message):
     await msg.reply(help_msg, disable_web_page_preview = True)
 
-
-
 async def downloader(**args):
     global is_working
     is_working = True
@@ -72,47 +73,44 @@ async def downloader(**args):
         user_id=user_msg.from_user.id
         user_urls = extractor.find_urls(user_msg.text)
         for user_url in user_urls:
-            sdm, dm, suf = tldextract.extract(user_url)
-
-            await video_status_msg.edit_text('👍Начинаю загрузку!')
             try:
+                await video_status_msg.edit_text('👍Начинаю загрузку!')
                 video_path = await asyncio.to_thread(dl.download, user_url, f'{user_id}')
                 c.log(f'Downloaded from site: {user_url}')
                 c.log(f'Requested by user @{user_msg.from_user.username} ({user_id})')
-            except DownloadError:
-                if dm == 'instagram':
-                    await video_status_msg.edit_text(text='❌Ошибка скачивания!\n'+
-                                    'Эта ошибка может возникнуть при попытке скачать сториз. '+
-                                    'Данная функция будет добавлена позже.')
-                    return
-                else:
-                    await video_status_msg.edit_text(text='❌Ошибка скачивания! '+
-                                    'Проверьте, правильная ли ссылка, или повторите загрузку')
-                    rlog.exception(f'Failed to download video from: [blue u]{user_url}')
-                    return
-            except:
-                await video_status_msg.edit_text(text='❌Во время скачивания произошла ошибка!'+
-                                    'Проверьте, правильная ли ссылка, или повторите загрузку')
-                rlog.exception(f'Failed to download video from: [blue u]{user_url}')
-                return
-            
-            await video_status_msg.edit_text(text='✔️Загружено!\n🕒Отправляю...')
-            try:
+                await video_status_msg.edit_text(text='✔️Загружено!\n🕒Отправляю...')
                 await bot.send_video(user_msg.chat.id, open(video_path, 'rb'), reply_to_message_id=user_msg.message_id)
                 fdel(video_path)
-            except:
-                await video_status_msg.edit_text(text='❌Ошибка отправки файла!'+
-                                'Попробуйте еще раз.')
-                rlog.exception(f'Failed sending a video to user [blue u]{user_id}')
-                return
-            c.log(f'Video [blue u]{video_path}[/blue u] was sent!')
-            await video_status_msg.delete()
+                c.log(f'Video [blue u]{video_path}[/blue u] was sent!')
+                await video_status_msg.delete()
+            except Exception as e:
+                str_error=str(e)
+                if 'File too large for uploading' in str_error:
+                    await video_status_msg.edit_text(text='❌Ошибка, видео слишком большое!')
+                    c.log(f'Video [blue u]{video_path}[/blue u] was not sent because of it size')
+                elif 'is not a valid URL' in str_error or 'Unsupported URL' in str_error:
+                    await video_status_msg.edit_text(text='❌На этом сайте нет видео или сайт не поддерживается!')
+                    c.log(f'Site {user_url} was not a video!')
+                elif '[instagram:story]' in str_error and 'You need to log in to access this content' in str_error:
+                    await video_status_msg.edit_text(text='❌Stories временно недоступны для скачивания')
+                    c.log(f'Site {user_url} was a Stories')
+                elif 'yt_dlp' in str(type(e)):
+                    await video_status_msg.edit_text(text='❌Ошибка скачивания!')
+                    rlog.exception(f'Failed downloading video from site {user_url}')
+                elif 'aiogram' in str(type(e)):
+                    await video_status_msg.edit_text(text='❌Ошибка отправки!')
+                    rlog.exception(f'Failed sending a video to user [blue u]{user_id}')
+                else:
+                    await video_status_msg.edit_text(text='❌Непредвиденная ошибка')
+                    rlog.exception('Unexpected error:')
     
     is_working = False
 
-
 @dp.message_handler(content_types = ['text'])
 async def echo_download_msg(msg: types.message):
+    msg_datetime = msg.date
+    if msg_datetime<bot_start:
+        return
     if not extractor.has_urls(msg.text):
         await msg.reply("❌В вашем сообщении нету ссылки!")
         return
@@ -125,9 +123,23 @@ async def echo_download_msg(msg: types.message):
 
 
 
+def launch_bot(l):
+    try:
+        global bot_start
+        bot_start = datetime.now()
+        executor.start_polling(dp, skip_updates=True)
+    except Exception as e:
+        if l < 3:
+            c.rule("[bold red]Error, trying to restart...", style='red')
+            print(e)
+            sleep(5)
+            c.rule("[bold yellow]Restarting...", style='yellow')
+            launch_bot(l+1)
+        else:
+            c.rule("[bold red]Turning off...", style='red')
+            print(e)
 
-c.rule("[bold green]Starting bot!")
-try:
-    executor.start_polling(dp)
-except:
-    c.rule("[bold red]Error, turning bot off...", style='red')
+
+if __name__ == '__main__':
+    c.rule("[bold green]Starting bot!")
+    launch_bot(0)
