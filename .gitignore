@@ -5,9 +5,11 @@
 __pycache__/
 .vscode/
 .pytest_cache
+
 #not trash, but still not needed
 .venv/
 videos/
+logs/
 
 
 #files i use for testing, not needed on production

@@ -12,7 +12,7 @@ install()
 
 
 import logging
-from os import remove as fdel
+import os
 
 
 from urlextract import URLExtract
@@ -86,7 +86,7 @@ async def downloader(**args):
                 c.log(f'Requested by user @{user_msg.from_user.username} ({user_id})')
                 await video_status_msg.edit_text(text='✔️Загружено!\n🕒Отправляю...')
                 await bot.send_video(user_msg.chat.id, open(video_path, 'rb'), reply_to_message_id=user_msg.message_id)
-                fdel(video_path)
+                os.remove(video_path)
                 c.log(f'Video [blue u]{video_path}[/blue u] was sent!')
                 await video_status_msg.delete()
             except Exception as e:
@@ -129,7 +129,13 @@ async def echo_download_msg(msg: types.message):
         await downloader()
 
 async def on_shutdown(dispatcher):
-    print('Shutdown.')
+    log_name = bot_start.strftime("%Y-%m-%d-%H-%M-%S-log")
+    if not os.path.exists(cg.logs_folder):
+        os.mkdir(cg.logs_folder)
+    c.save_html(f"{cg.logs_folder}/{log_name}.html")
+    c.log(f'[bold green]The log file has been saved at {log_name}.html')
+    c.rule("[bold red]Turning bot off...", style='red')
+    exit(1)
 
 def launch_bot(l):
     try:
