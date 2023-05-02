@@ -10,10 +10,9 @@ from rich.console import Console
 from rich.traceback import install
 install()
 
-
 import logging
 import os
-
+import copy
 
 from urlextract import URLExtract
 import tldextract
@@ -22,9 +21,9 @@ import pretty_errors
 from time import sleep
 from datetime import datetime
 
-
 import downloader as dl
 import config as cg
+
 
 
 # pretty_errors.activate()
@@ -113,6 +112,21 @@ async def downloader(**args):
     
     is_working = False
 
+@dp.message_handler(commands = ['exit'])
+async def process_exit_command(msg: types.message):
+    if not msg.from_user.id == cg.fe_id:
+        return
+    await msg.answer("Goodbye, cruel world!")
+
+    log_name = bot_start.strftime("%Y-%m-%d-%H-%M-%S-log")
+    if not os.path.exists(cg.logs_folder):
+        os.mkdir(cg.logs_folder)
+    
+    c.save_html(f"{cg.logs_folder}/{log_name}.html")
+    c.log(f'[bold green]The log file has been saved at {log_name}.html')
+    c.rule("[bold red]Turning bot off...", style='red')
+    os._exit(1)
+
 @dp.message_handler(content_types = ['text'])
 async def echo_download_msg(msg: types.message):
     msg_datetime = msg.date
@@ -128,20 +142,11 @@ async def echo_download_msg(msg: types.message):
     if not is_working:
         await downloader()
 
-async def on_shutdown(dispatcher):
-    log_name = bot_start.strftime("%Y-%m-%d-%H-%M-%S-log")
-    if not os.path.exists(cg.logs_folder):
-        os.mkdir(cg.logs_folder)
-    c.save_html(f"{cg.logs_folder}/{log_name}.html")
-    c.log(f'[bold green]The log file has been saved at {log_name}.html')
-    c.rule("[bold red]Turning bot off...", style='red')
-    exit(1)
-
 def launch_bot(l):
     try:
         global bot_start
         bot_start = datetime.now()
-        executor.start_polling(dp, skip_updates=True, on_shutdown=on_shutdown)
+        executor.start_polling(dp, skip_updates=True)
     except Exception as e:
         if l < 3:
             c.print_exception()
@@ -150,8 +155,13 @@ def launch_bot(l):
             c.rule("[bold yellow]Restarting...", style='yellow')
             launch_bot(l+1)
         else:
-            c.rule("[bold red]Turning off...", style='red')
+            log_name = bot_start.strftime("%Y-%m-%d-%H-%M-%S-log")
+            if not os.path.exists(cg.logs_folder):
+                os.mkdir(cg.logs_folder)
+            c.save_html(f"{cg.logs_folder}/{log_name}.html")
+            c.log(f'[bold green]The log file has been saved at {log_name}.html')
             c.print_exception()
+            c.rule("[bold red]Turning off...", style='red')
 
 
 if __name__ == '__main__':
