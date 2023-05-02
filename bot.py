@@ -7,6 +7,10 @@ import asyncio
 
 from rich.logging import RichHandler
 from rich.console import Console
+from rich.traceback import install
+install()
+
+
 import logging
 from os import remove as fdel
 
@@ -23,17 +27,19 @@ import downloader as dl
 import config as cg
 
 
-pretty_errors.activate()
+# pretty_errors.activate()
 
-c = Console()
+c = Console(record=True)
 rlog = logging.getLogger("rich")
 extractor = URLExtract()
 
+
 FORMAT = "%(message)s"
-logging.basicConfig(level=logging.INFO, format=FORMAT, datefmt="[%X]", handlers=[RichHandler()])
+logging.basicConfig(level=logging.INFO, format=FORMAT, datefmt="[%X]", handlers=[RichHandler(rich_tracebacks=True)])
 # logger = logging.getLogger(__name__)
 
-local_server = TelegramAPIServer.from_base('http://localhost:8081')
+# local_server = TelegramAPIServer.from_base('http://localhost:8081')
+local_server = TelegramAPIServer.from_base('http://161.35.91.121:8081')
 try:
     bot = Bot(token=cg.token, server=local_server)
 except:
@@ -96,13 +102,14 @@ async def downloader(**args):
                     c.log(f'Site {user_url} was a Stories')
                 elif 'yt_dlp' in str(type(e)):
                     await video_status_msg.edit_text(text='❌Ошибка скачивания!')
-                    rlog.exception(f'Failed downloading video from site {user_url}')
+                    c.log(f'[red u b]Failed downloading video from site {user_url} [/red u b]')
                 elif 'aiogram' in str(type(e)):
                     await video_status_msg.edit_text(text='❌Ошибка отправки!')
-                    rlog.exception(f'Failed sending a video to user [blue u]{user_id}')
+                    c.log(f'[red u b]Failed sending a video to user [blue u]{user_id} [/blue u] [/red u b]')
+                    c.print_exception()
                 else:
                     await video_status_msg.edit_text(text='❌Непредвиденная ошибка')
-                    rlog.exception('Unexpected error:')
+                    c.print_exception()
     
     is_working = False
 
@@ -121,23 +128,24 @@ async def echo_download_msg(msg: types.message):
     if not is_working:
         await downloader()
 
-
+async def on_shutdown(dispatcher):
+    print('Shutdown.')
 
 def launch_bot(l):
     try:
         global bot_start
         bot_start = datetime.now()
-        executor.start_polling(dp, skip_updates=True)
+        executor.start_polling(dp, skip_updates=True, on_shutdown=on_shutdown)
     except Exception as e:
         if l < 3:
+            c.print_exception()
             c.rule("[bold red]Error, trying to restart...", style='red')
-            print(e)
             sleep(5)
             c.rule("[bold yellow]Restarting...", style='yellow')
             launch_bot(l+1)
         else:
             c.rule("[bold red]Turning off...", style='red')
-            print(e)
+            c.print_exception()
 
 
 if __name__ == '__main__':

@@ -3,11 +3,12 @@ import yt_dlp
 import pretty_errors
 from rich.console import Console
 from rich import print as rprint
+import config as cg
 def download(link, name='%(title)s'):
     # Define the download options
     ydl_opts = {
         'format': 'bestvideo+bestaudio/best',
-        'outtmpl': 'videos/{}.%(ext)s'.format(name),
+        'outtmpl': '{}/{}.%(ext)s'.format(cg.videos_folder, name),
         'quiet': True,
         # 'verbose':True,
         # 'forcefilename': True,
@@ -15,8 +16,8 @@ def download(link, name='%(title)s'):
     }
     c = Console()
     # Create the "videos" folder if it doesn't exist
-    if not os.path.exists('videos'):
-        os.mkdir('videos')
+    if not os.path.exists(cg.videos_folder):
+        os.mkdir(cg.videos_folder)
     
     with c.status(f"Downloading video from site: [i blue u]{link}", spinner='bounce') as status:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:

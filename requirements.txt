@@ -10,4 +10,5 @@ yt-dlp
 
 #pretty console ^_^
 rich
-pretty_errors
+# for now, rich gives quite good error messages
+# pretty_errors
