@@ -25,7 +25,7 @@ commands-server.txt
 *.pub
 *.ppk
 token.txt
-
+*.tar
 
 #has some keys, don't want to make them public yet
 docker-compose.yml

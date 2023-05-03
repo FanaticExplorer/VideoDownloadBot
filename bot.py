@@ -17,7 +17,7 @@ import copy
 from urlextract import URLExtract
 import tldextract
 
-import pretty_errors
+
 from time import sleep
 from datetime import datetime
 
@@ -26,7 +26,6 @@ import config as cg
 
 
 
-# pretty_errors.activate()
 
 c = Console(record=True)
 rlog = logging.getLogger("rich")
@@ -39,10 +38,7 @@ logging.basicConfig(level=logging.INFO, format=FORMAT, datefmt="[%X]", handlers=
 
 # local_server = TelegramAPIServer.from_base('http://localhost:8081')
 local_server = TelegramAPIServer.from_base('http://161.35.91.121:8081')
-try:
-    bot = Bot(token=cg.token, server=local_server)
-except:
-    bot = Bot(token=cg.token)
+bot = Bot(token=cg.token, server=local_server)
 dp = Dispatcher(bot)
 queue = asyncio.Queue(maxsize=100)
 while not queue.empty():
@@ -115,6 +111,7 @@ async def downloader(**args):
 @dp.message_handler(commands = ['exit'])
 async def process_exit_command(msg: types.message):
     if not msg.from_user.id == cg.fe_id:
+        await msg.answer("You don't have enough access. Don't even try, it won't work for you.")
         return
     await msg.answer("Goodbye, cruel world!")
 
@@ -122,10 +119,15 @@ async def process_exit_command(msg: types.message):
     if not os.path.exists(cg.logs_folder):
         os.mkdir(cg.logs_folder)
     
+    c.rule("[bold red]Turning bot off...", style='red')
     c.save_html(f"{cg.logs_folder}/{log_name}.html")
     c.log(f'[bold green]The log file has been saved at {log_name}.html')
-    c.rule("[bold red]Turning bot off...", style='red')
-    os._exit(1)
+    try:
+        await msg.reply_document(open(f"{cg.logs_folder}/{log_name}.html", 'rb'))
+    except Exception as e:
+        if 'File too large for uploading' in str(e):
+            await msg.reply("Oh nooo... The log file is too large")
+    exit(1)
 
 @dp.message_handler(content_types = ['text'])
 async def echo_download_msg(msg: types.message):

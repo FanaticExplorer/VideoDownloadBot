@@ -1,6 +1,5 @@
 import os
 import yt_dlp
-import pretty_errors
 from rich.console import Console
 from rich import print as rprint
 import config as cg
