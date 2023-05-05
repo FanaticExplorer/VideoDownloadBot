@@ -4,7 +4,11 @@ WORKDIR /bot/
 
 COPY . /bot/
 
-RUN pip install --user -r requirements.txt
+RUN apt update
+
+RUN apt install ffmpeg -y
+
+RUN pip install -r requirements.txt
 
 EXPOSE 8443
 
