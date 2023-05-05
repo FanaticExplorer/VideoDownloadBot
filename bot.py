@@ -8,7 +8,6 @@ import asyncio
 from rich.logging import RichHandler
 from rich.console import Console
 from rich.traceback import install
-install()
 
 import logging
 import os
@@ -26,7 +25,7 @@ import config as cg
 
 
 
-
+install()
 c = Console(record=True)
 rlog = logging.getLogger("rich")
 extractor = URLExtract()
@@ -34,9 +33,7 @@ extractor = URLExtract()
 
 FORMAT = "%(message)s"
 logging.basicConfig(level=logging.INFO, format=FORMAT, datefmt="[%X]", handlers=[RichHandler(rich_tracebacks=True)])
-# logger = logging.getLogger(__name__)
 
-# local_server = TelegramAPIServer.from_base('http://localhost:8081')
 local_server = TelegramAPIServer.from_base('http://161.35.91.121:8081')
 bot = Bot(token=cg.token, server=local_server)
 dp = Dispatcher(bot)
@@ -98,6 +95,7 @@ async def downloader(**args):
                 elif 'yt_dlp' in str(type(e)):
                     await video_status_msg.edit_text(text='❌Ошибка скачивания!')
                     c.log(f'[red u b]Failed downloading video from site {user_url} [/red u b]')
+                    c.print_exception()
                 elif 'aiogram' in str(type(e)):
                     await video_status_msg.edit_text(text='❌Ошибка отправки!')
                     c.log(f'[red u b]Failed sending a video to user [blue u]{user_id} [/blue u] [/red u b]')
