@@ -10,7 +10,7 @@ RUN apt install ffmpeg -y
 
 RUN pip install -r requirements.txt
 
-pip install -U --pre aiogram
+RUN pip install -U --pre aiogram
 
 EXPOSE 8443
 
