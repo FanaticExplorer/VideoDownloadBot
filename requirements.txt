@@ -1,5 +1,5 @@
 #telegram itself
-aiogram==3.0.0b7
+aiogram
 python-dotenv
 
 #url extractors

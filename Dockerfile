@@ -1,5 +1,3 @@
-#outdated
-
 FROM python:3.11
 
 WORKDIR /bot/
@@ -11,6 +9,8 @@ RUN apt update
 RUN apt install ffmpeg -y
 
 RUN pip install -r requirements.txt
+
+pip install -U --pre aiogram
 
 EXPOSE 8443
 
