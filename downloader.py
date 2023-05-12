@@ -13,7 +13,7 @@ def download(link, name='%(title)s'):
         # 'forcefilename': True,
         'nooverwrites': False,
     }
-    c = Console()
+    c = Console(log_path=False)
     # Create the "videos" folder if it doesn't exist
     if not os.path.exists(cg.videos_folder):
         os.mkdir(cg.videos_folder)

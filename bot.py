@@ -1,8 +1,9 @@
-from aiogram import Bot, types
-from aiogram.dispatcher import Dispatcher
-from aiogram.utils import executor
-from aiogram.bot.api import TelegramAPIServer
-from aiogram.utils import exceptions as tg_errors
+from aiogram import Bot, Dispatcher, types
+from aiogram.client.telegram import TelegramAPIServer
+from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.filters.command import Command
+from aiogram import F
+from aiogram.types import FSInputFile
 import asyncio
 
 from rich.logging import RichHandler
@@ -11,10 +12,9 @@ from rich.traceback import install
 
 import logging
 import os
-import copy
+import zipfile
 
 from urlextract import URLExtract
-import tldextract
 
 
 from time import sleep
@@ -26,17 +26,25 @@ import config as cg
 
 
 install()
-c = Console(record=True)
+c = Console(record=True, log_path=False)
 rlog = logging.getLogger("rich")
 extractor = URLExtract()
 
 
 FORMAT = "%(message)s"
-logging.basicConfig(level=logging.INFO, format=FORMAT, datefmt="[%X]", handlers=[RichHandler(rich_tracebacks=True)])
+logging.basicConfig(level=logging.INFO, 
+                    format=FORMAT, 
+                    datefmt="[%X]", 
+                    handlers=[RichHandler(
+                        rich_tracebacks=True, show_path=False)])
+logging.getLogger("aiogram.event").disabled = True
 
-local_server = TelegramAPIServer.from_base('http://161.35.91.121:8081')
-bot = Bot(token=cg.token, server=local_server)
-dp = Dispatcher(bot)
+session = AiohttpSession(
+    api=TelegramAPIServer.from_base(
+        cg.config_o.api_server.get_secret_value()))
+bot = Bot(token=cg.config_o.token.get_secret_value(), 
+        session=session)
+dp = Dispatcher()
 queue = asyncio.Queue(maxsize=100)
 while not queue.empty():
     queue_get = queue.get()
@@ -48,17 +56,51 @@ with open(cg.start_msg_path, encoding='utf8') as f_start:
 with open(cg.help_msg_path, encoding='utf8') as f_help:
     help_msg = f_help.read()
 
+def update_logs(name):
+    if not os.path.exists(cg.logs_folder):
+        os.mkdir(cg.logs_folder)
+    if not os.path.exists(f"{cg.logs_folder}/{name}"):
+        os.mkdir(f"{cg.logs_folder}/{name}")
+    c.save_html(f"{cg.logs_folder}/{name}/rich-logs.html", clear=False)
+    c.save_text(f"{cg.logs_folder}/{name}/rich-logs.log", clear=False)
+    c.log(f'[bold green]Logs updated')
 
+def zip_folder(folder_path, output_path):
+    with zipfile.ZipFile(output_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                rel_path = os.path.relpath(file_path, folder_path)
+                zipf.write(file_path, arcname=rel_path)
 
-@dp.message_handler(commands = ['start'])
+async def on_startup(dispatcher):
+    global bot_start, log_name
+    bot_start = datetime.now()
+    log_name = bot_start.strftime("%Y-%m-%d-%H-%M-%S-log")
+
+@dp.message(Command('start'))
 async def process_start_command(msg: types.message):
     await msg.reply(start_msg)
 
 
 
-@dp.message_handler(commands = ['help'])
+@dp.message(Command('help'))
 async def process_help_command(msg: types.message):
     await msg.reply(help_msg, disable_web_page_preview = True)
+
+@dp.message(Command('logs'))
+async def process_logs_command(msg: types.message):
+    if not msg.from_user.id == cg.fe_id:
+        await msg.answer("You don't have enough access. Don't even try, it won't work for you.")
+        return
+    log_send_status = await msg.reply("Updating logs...")
+    update_logs(log_name)
+    await log_send_status.edit_text('Sending logs...')
+    zip_folder(f"{cg.logs_folder}/{log_name}", cg.logs_zip)
+    c.log('Archive has been created')
+    logs_archive = FSInputFile(cg.logs_zip)
+    await msg.reply_document(logs_archive)
+    await log_send_status.delete()
 
 async def downloader(**args):
     global is_working
@@ -77,7 +119,9 @@ async def downloader(**args):
                 c.log(f'Downloaded from site: {user_url}')
                 c.log(f'Requested by user @{user_msg.from_user.username} ({user_id})')
                 await video_status_msg.edit_text(text='✔️Загружено!\n🕒Отправляю...')
-                await bot.send_video(user_msg.chat.id, open(video_path, 'rb'), reply_to_message_id=user_msg.message_id)
+                # video = open(video_path, 'rb')
+                video = FSInputFile(video_path)
+                await bot.send_video(user_msg.chat.id, video, reply_to_message_id=user_msg.message_id)
                 os.remove(video_path)
                 c.log(f'Video [blue u]{video_path}[/blue u] was sent!')
                 await video_status_msg.delete()
@@ -103,34 +147,15 @@ async def downloader(**args):
                 else:
                     await video_status_msg.edit_text(text='❌Непредвиденная ошибка')
                     c.print_exception()
+            finally:
+                update_logs(log_name)
     
     is_working = False
 
-@dp.message_handler(commands = ['exit'])
-async def process_exit_command(msg: types.message):
-    if not msg.from_user.id == cg.fe_id:
-        await msg.answer("You don't have enough access. Don't even try, it won't work for you.")
-        return
-    await msg.answer("Goodbye, cruel world!")
-
-    log_name = bot_start.strftime("%Y-%m-%d-%H-%M-%S-log")
-    if not os.path.exists(cg.logs_folder):
-        os.mkdir(cg.logs_folder)
-    
-    c.rule("[bold red]Turning bot off...", style='red')
-    c.save_html(f"{cg.logs_folder}/{log_name}.html")
-    c.log(f'[bold green]The log file has been saved at {log_name}.html')
-    try:
-        await msg.reply_document(open(f"{cg.logs_folder}/{log_name}.html", 'rb'))
-    except Exception as e:
-        if 'File too large for uploading' in str(e):
-            await msg.reply("Oh nooo... The log file is too large")
-    exit(1)
-
-@dp.message_handler(content_types = ['text'])
+@dp.message(F.text)
 async def echo_download_msg(msg: types.message):
-    msg_datetime = msg.date
-    if msg_datetime<bot_start:
+    if msg.text.startswith('/'):
+        await msg.reply("❌Unknown command")
         return
     if not extractor.has_urls(msg.text):
         await msg.reply("❌В вашем сообщении нету ссылки!")
@@ -142,28 +167,16 @@ async def echo_download_msg(msg: types.message):
     if not is_working:
         await downloader()
 
-def launch_bot(l):
-    try:
-        global bot_start
-        bot_start = datetime.now()
-        executor.start_polling(dp, skip_updates=True)
-    except Exception as e:
-        if l < 3:
-            c.print_exception()
-            c.rule("[bold red]Error, trying to restart...", style='red')
-            sleep(5)
-            c.rule("[bold yellow]Restarting...", style='yellow')
-            launch_bot(l+1)
-        else:
-            log_name = bot_start.strftime("%Y-%m-%d-%H-%M-%S-log")
-            if not os.path.exists(cg.logs_folder):
-                os.mkdir(cg.logs_folder)
-            c.save_html(f"{cg.logs_folder}/{log_name}.html")
-            c.log(f'[bold green]The log file has been saved at {log_name}.html')
-            c.print_exception()
-            c.rule("[bold red]Turning off...", style='red')
-
+async def main():
+    await bot.delete_webhook(drop_pending_updates=True)
+    dp.startup.register(on_startup)
+    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 
 if __name__ == '__main__':
     c.rule("[bold green]Starting bot!")
-    launch_bot(0)
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        exit(1)
+    except SystemExit:
+        exit(1)
